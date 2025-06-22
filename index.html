@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>여행일지 | My Journey</title>
+  <link rel="stylesheet" href="public/style.css?v=2.7" />
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    rel="stylesheet"
+  />
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="logo">
+          <i class="fas fa-camera"></i>
+          여행일지
+        </h1>
+      </div>
+      <div class="header-slogan">Collecting Moments, Creating Stories</div>
+      <div class="header-actions">
+        <button class="login-btn" id="loginBtn" onclick="openLoginModal()">
+          <i class="fas fa-user"></i>
+          관리자 로그인
+        </button>
+        <button class="upload-btn" id="uploadBtn" onclick="openUploadModal()" style="display: none;">
+          <i class="fas fa-plus"></i>
+          사진 추가
+        </button>
+        <button class="logout-btn" id="logoutBtn" onclick="logout()" style="display: none;">
+          <i class="fas fa-sign-out-alt"></i>
+          로그아웃
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2><i class="fas fa-images"></i> 사진관</h2>
+        <div class="sidebar-header-right">
+          <span id="photoCount">0개의 추억</span>
+          <button class="sidebar-toggle" onclick="toggleCategoryMenu()">
+            <i class="fas fa-chevron-down"></i>
+          </button>
+        </div>
+      </div>
+      <nav class="category-menu collapsed" id="categoryMenu">
+        <div class="category-section">
+          <div class="category-header" onclick="toggleCategory('region')">
+            <h4><i class="fas fa-globe-asia"></i> 지역별</h4>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <ul id="regionCategories" class="category-list">
+            <li><a href="#" onclick="filterByCategory('all', this)" class="active">전체 보기</a></li>
+          </ul>
+        </div>
+        <div class="category-section">
+          <div class="category-header" onclick="toggleCategory('place')">
+            <h4><i class="fas fa-map-marked-alt"></i> 장소별</h4>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <ul id="placeCategories" class="category-list"></ul>
+        </div>
+        <div class="category-section">
+          <div class="category-header" onclick="toggleCategory('year')">
+            <h4><i class="fas fa-calendar-check"></i> 연도별</h4>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <ul id="yearCategories" class="category-list"></ul>
+        </div>
+        <div class="category-section">
+          <div class="category-header" onclick="toggleCategory('season')">
+            <h4><i class="fas fa-calendar-alt"></i> 계절</h4>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <ul class="category-list">
+            <li><a href="#" onclick="filterByCategory('spring', this)">봄</a></li>
+            <li><a href="#" onclick="filterByCategory('summer', this)">여름</a></li>
+            <li><a href="#" onclick="filterByCategory('autumn', this)">가을</a></li>
+            <li><a href="#" onclick="filterByCategory('winter', this)">겨울</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="main-header">
+        <h2 id="mainCategoryTitle"></h2>
+        <div class="main-header-meta">
+          <span>게시글</span>
+          <span id="mainPhotoCount">0개</span>
+          <i class="fas fa-plus"></i>
+        </div>
+      </div>
+      <div class="feed-container">
+        <div class="feed" id="photoFeed"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal" id="uploadModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>새로운 추억 추가</h2>
+        <button class="close-btn" onclick="closeUploadModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form class="upload-form" id="uploadForm">
+        <div class="form-group">
+          <label for="photoInput" class="file-input-label">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <span>사진을 선택하세요 (여러 장 선택 가능)</span>
+          </label>
+          <input type="file" id="photoInput" accept="image/*" multiple />
+          <div class="preview-container" id="previewContainer"></div>
+        </div>
+        <div class="form-group">
+          <label for="titleInput">제목 <small>(선택사항 - 파일명으로 자동 설정)</small></label>
+          <input type="text" id="titleInput" placeholder="추억의 제목을 입력하세요" />
+        </div>
+        <div class="form-group">
+          <label for="locationInput">장소 <small>(선택사항)</small></label>
+          <input type="text" id="locationInput" placeholder="어디에서 찍었나요?" />
+        </div>
+        <div class="form-group">
+          <label for="categoryInput">카테고리 <small>(선택사항)</small></label>
+          <input type="text" id="categoryInput" placeholder="예: 서울, 부산, 강릉" />
+        </div>
+        <div class="form-group">
+          <label for="seasonSelect">계절 <small>(선택사항)</small></label>
+          <select id="seasonSelect">
+            <option value="">선택하세요</option>
+            <option value="spring">봄</option>
+            <option value="summer">여름</option>
+            <option value="autumn">가을</option>
+            <option value="winter">겨울</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="dateInput">날짜 <small>(선택사항)</small></label>
+          <input type="text" id="dateInput" placeholder="언제 찍었나요?" />
+        </div>
+        <div class="form-group">
+          <label for="descriptionInput">설명 <small>(선택사항)</small></label>
+          <textarea id="descriptionInput" rows="4" placeholder="추억에 대한 설명을 입력하세요"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="cancel-btn" onclick="closeUploadModal()">취소</button>
+          <button type="submit" class="submit-btn">추억 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="detailModal">
+    <div class="modal-content detail-modal">
+      <div class="detail-header">
+        <h2>추억 상세보기</h2>
+        <button class="detail-close-btn" onclick="closeDetailModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="detail-content" id="detailContent"></div>
+      <div class="detail-map-container" id="detailMapContainer" style="display: none;">
+        <div class="map-header">
+          <h3><i class="fas fa-map-marker-alt"></i> 위치 정보</h3>
+          <button class="map-close-btn" onclick="closeMap()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="map-content">
+          <div id="map"></div>
+          <div class="map-info" id="mapInfo"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="loginModal">
+    <div class="modal-content login-modal">
+      <div class="login-header">
+        <div class="login-icon">
+          <i class="fas fa-user-shield"></i>
+        </div>
+        <h2>관리자 로그인</h2>
+        <p>여행일지 관리 시스템에 접속합니다</p>
+      </div>
+      <form class="login-form" id="loginForm">
+        <div class="form-group">
+          <div class="input-wrapper">
+            <i class="fas fa-user input-icon"></i>
+            <input type="text" id="usernameInput" placeholder="관리자 아이디" required />
+            <div class="input-line"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="input-wrapper">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" id="passwordInput" placeholder="비밀번호" required />
+            <div class="input-line"></div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="cancel-btn" onclick="closeLoginModal()">
+            <i class="fas fa-times"></i>
+            취소
+          </button>
+          <button type="submit" class="login-submit-btn">
+            <i class="fas fa-sign-in-alt"></i>
+            로그인
+          </button>
+        </div>
+      </form>
+      <button class="modal-close-btn" onclick="closeLoginModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ✅ 1. Kakao SDK: 반드시 먼저 로드 -->
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=0ae707228692acb2442d0cd33c25dc45&libraries=services"></script>
+
+  <!-- ✅ 2. script.js: SDK가 먼저 로드된 뒤 실행 -->
+  <script src="public/script.js?v=1.1"></script>
+
+  <!-- ✅ 3. 지도 표시 함수 정의 -->
+  <script>
+    // 주소 별칭 사전 매핑
+    const addressAliasMap = {
+      // 해변/바다
+      "경포해변": "강원 강릉시 해안로 476",
+      "경포해수욕장": "강원 강릉시 해안로 476",
+      "해운대해수욕장": "부산 해운대구 해운대해변로 264",
+      "해운대": "부산 해운대구 해운대해변로 264",
+      "광안리해수욕장": "부산 수영구 광안해변로 219",
+      "광안리": "부산 수영구 광안해변로 219",
+      "속초해수욕장": "강원 속초시 해안로 264",
+      "속초": "강원 속초시 해안로 264",
+      
+      // 산/자연
+      "한라산": "제주 서귀포시 토평동 산1",
+      "설악산": "강원 속초시 설악동 산1",
+      "지리산": "전남 구례군 산동면 지리산로 1",
+      "북한산": "서울 강북구 수유동 산1",
+      "도봉산": "서울 도봉구 도봉동 산1",
+      
+      // 타워/랜드마크
+      "남산타워": "서울 용산구 남산공원길 105",
+      "N서울타워": "서울 용산구 남산공원길 105",
+      "롯데타워": "서울 송파구 올림픽로 300",
+      "63빌딩": "서울 영등포구 63로 50",
+      
+      // 공원/관광지
+      "여의도공원": "서울 영등포구 여의대로 330",
+      "한강공원": "서울 영등포구 여의대로 330",
+      "올림픽공원": "서울 송파구 올림픽로 25",
+      "서울숲": "서울 성동구 성수동1가 685",
+      
+      // 궁궐/전통
+      "경복궁": "서울 종로구 사직로 161",
+      "창덕궁": "서울 종로구 율곡로 99",
+      "창경궁": "서울 종로구 창경궁로 185",
+      "덕수궁": "서울 중구 세종대로 99",
+      
+      // 쇼핑/도심
+      "명동": "서울 중구 명동길 14",
+      "홍대": "서울 마포구 홍대로 3",
+      "강남": "서울 강남구 강남대로 396",
+      "동대문": "서울 중구 장충단로 253",
+      
+      // 제주도
+      "성산일출봉": "제주 서귀포시 성산읍 성산리 1",
+      "만장굴": "제주 제주시 구좌읍 만장굴길 182",
+      "천지연폭포": "제주 서귀포시 서귀동 668-1",
+      "협재해수욕장": "제주 제주시 한림읍 협재리 2497",
+      
+      // 부산
+      "감천문화마을": "부산 사하구 감내2로 203",
+      "태종대": "부산 영도구 전망로 24",
+      "용두산공원": "부산 중구 용두산길 37-55",
+      
+      // 대구
+      "동성로": "대구 중구 동성로 1",
+      "수성못": "대구 수성구 수성동2가 1",
+      
+      // 인천
+      "월미도": "인천 중구 월미문화로 21",
+      "차이나타운": "인천 중구 차이나타운로 43-1",
+      
+      // 기타 유명 관광지
+      "부산타워": "부산 중구 광복로 55",
+      "부산아쿠아리움": "부산 해운대구 해운대해변로 264",
+      "서울랜드": "경기 과천시 광명로 181",
+      "에버랜드": "경기 용인시 처인구 포곡읍 에버랜드로 199"
+    };
+
+    // script.js에서 호출할 지도 표시 함수
+    window.showKakaoMap = function(location, mapInfo) {
+      if (typeof kakao === 'undefined' || !kakao.maps) {
+        console.error('❌ Kakao SDK가 로드되지 않았습니다.');
+        if (mapInfo) {
+          mapInfo.innerHTML = `
+            <div class="address">지도를 불러올 수 없습니다</div>
+            <div class="road-address">입력된 주소: ${location}</div>
+          `;
+        }
+        return;
+      }
+      
+      console.log('✅ showKakaoMap 호출:', location);
+      
+      // 주소 별칭 매핑 적용
+      const mappedAddress = addressAliasMap[location] || location;
+      if (mappedAddress !== location) {
+        console.log(`📍 주소 매핑: "${location}" → "${mappedAddress}"`);
+      }
+      
+      const container = document.getElementById('map');
+      if (!container) {
+        console.error("❌ 지도 컨테이너를 찾을 수 없습니다.");
+        return;
+      }
+
+      const mapOption = {
+        center: new kakao.maps.LatLng(37.5665, 126.9780),
+        level: 3
+      };
+
+      const map = new kakao.maps.Map(container, mapOption);
+      const geocoder = new kakao.maps.services.Geocoder();
+      const places = new kakao.maps.services.Places();
+
+      // 먼저 주소 검색 시도
+      geocoder.addressSearch(mappedAddress, function(result, status) {
+        console.log('주소 검색 결과:', status, result);
+        
+        if (status === kakao.maps.services.Status.OK) {
+          // 주소 검색 성공
+          const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+          const marker = new kakao.maps.Marker({ map, position: coords });
+          map.setCenter(coords);
+          
+          // 정보 표시
+          const address = result[0].address.address_name;
+          const roadAddress = result[0].road_address ? result[0].road_address.address_name : '';
+          
+          if (mapInfo) {
+            let infoHTML = `<div class="address">${address}</div>`;
+            if (roadAddress) {
+              infoHTML += `<div class="road-address">${roadAddress}</div>`;
+            }
+            if (mappedAddress !== location) {
+              infoHTML += `<div class="mapped-info"><small>📍 "${location}" → "${mappedAddress}"</small></div>`;
+            }
+            mapInfo.innerHTML = infoHTML;
+          }
+          
+          console.log("✅ 지도에 위치 표시 완료 (주소 검색)");
+        } else {
+          // 주소 검색 실패 시 키워드 검색 시도
+          console.log('📍 주소 검색 실패, 키워드 검색 시도:', mappedAddress);
+          
+          places.keywordSearch(mappedAddress, function(placesResult, placesStatus) {
+            console.log('키워드 검색 결과:', placesStatus, placesResult);
+            
+            if (placesStatus === kakao.maps.services.Status.OK && placesResult.length > 0) {
+              // 키워드 검색 성공
+              const place = placesResult[0];
+              const coords = new kakao.maps.LatLng(place.y, place.x);
+              const marker = new kakao.maps.Marker({ map, position: coords });
+              map.setCenter(coords);
+              
+              // 정보 표시
+              if (mapInfo) {
+                let infoHTML = `<div class="address">${place.place_name}</div>`;
+                if (place.address_name) {
+                  infoHTML += `<div class="road-address">${place.address_name}</div>`;
+                }
+                if (place.road_address_name) {
+                  infoHTML += `<div class="road-address">${place.road_address_name}</div>`;
+                }
+                if (mappedAddress !== location) {
+                  infoHTML += `<div class="mapped-info"><small>📍 "${location}" → "${mappedAddress}" (키워드 검색)</small></div>`;
+                } else {
+                  infoHTML += `<div class="mapped-info"><small>📍 키워드 검색으로 찾음</small></div>`;
+                }
+                mapInfo.innerHTML = infoHTML;
+              }
+              
+              console.log("✅ 지도에 위치 표시 완료 (키워드 검색)");
+            } else {
+              // 키워드 검색도 실패
+              console.warn('⚠️ 키워드 검색도 실패:', mappedAddress);
+              if (mapInfo) {
+                let errorHTML = `<div class="address">위치를 찾을 수 없습니다</div>`;
+                errorHTML += `<div class="road-address">입력된 주소: ${location}</div>`;
+                if (mappedAddress !== location) {
+                  errorHTML += `<div class="mapped-info"><small>📍 매핑 시도: "${location}" → "${mappedAddress}"</small></div>`;
+                }
+                errorHTML += `<div class="mapped-info"><small>❌ 주소 검색과 키워드 검색 모두 실패</small></div>`;
+                mapInfo.innerHTML = errorHTML;
+              }
+            }
+          });
+        }
+      });
+    };
+
+    // 페이지 로드 시 SDK 상태 확인
+    window.addEventListener("load", () => {
+      console.log("페이지 로드 완료");
+      console.log("kakao 객체 상태:", typeof kakao);
+      if (typeof kakao !== 'undefined') {
+        console.log("✅ Kakao SDK 로드 완료");
+        console.log("📍 주소 별칭 매핑 준비 완료:", Object.keys(addressAliasMap).length, "개");
+      } else {
+        console.error("❌ Kakao SDK 로드 실패");
+      }
+    });
+  </script>
+</body>
+</html> 
