@@ -8,25 +8,31 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 미들웨어 설정
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://kkyx03.github.io',
-    'https://kkyx03.github.io/trip-test'
-  ],
-  credentials: true
-}));
+app.use(cors()); // CORS 설정을 더 유연하게 변경
 app.use(express.json());
 app.use(express.static('public'));
 
-// 업로드 폴더 생성
-const uploadDir = path.join(__dirname, 'uploads');
-const imagesDir = path.join(uploadDir, 'images');
-const dataFile = path.join(uploadDir, 'photos.json');
+// Render 환경인지 확인 (NODE_ENV가 'production'으로 설정됨)
+const isProduction = process.env.NODE_ENV === 'production';
+// Render의 영구 디스크 경로 또는 로컬 개발용 경로 설정
+const dataDir = isProduction ? '/var/data/trip-journey' : path.join(__dirname, 'uploads');
 
-// 필요한 디렉토리 생성
-fs.ensureDirSync(uploadDir);
+console.log(`데이터 저장 경로: ${dataDir}`);
+console.log(`서버 환경: ${isProduction ? 'Production (Render)' : 'Development (Local)'}`);
+
+// 업로드 폴더 및 파일 경로 설정
+const imagesDir = path.join(dataDir, 'images');
+const dataFile = path.join(dataDir, 'photos.json');
+
+// 필요한 디렉토리 및 파일 생성 (최초 실행 시)
 fs.ensureDirSync(imagesDir);
+if (!fs.existsSync(dataFile)) {
+  fs.writeJsonSync(dataFile, []);
+}
+
+// 업로드된 이미지를 외부에서 접근할 수 있도록 static 미들웨어 설정
+// 예: "https://<...>/uploads/images/photo.jpg"
+app.use('/uploads', express.static(dataDir));
 
 // 사진 데이터 초기화 및 마이그레이션
 if (!fs.existsSync(dataFile)) {
@@ -67,7 +73,7 @@ if (!fs.existsSync(dataFile)) {
 // Multer 설정 - 이미지 파일 업로드
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, imagesDir);
+    cb(null, imagesDir); // 항상 imagesDir에 저장
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -176,6 +182,10 @@ app.post('/api/photos', upload.array('photos', 10), (req, res) => {
 app.delete('/api/photos/:id', (req, res) => {
   try {
     const postId = parseInt(req.params.id);
+    if (isNaN(postId)) {
+      return res.status(400).json({ error: '유효하지 않은 ID입니다.' });
+    }
+    
     const photos = readPhotosData();
     const postIndex = photos.findIndex(post => post.id === postId);
     
@@ -186,14 +196,21 @@ app.delete('/api/photos/:id', (req, res) => {
     const post = photos[postIndex];
     
     // 모든 이미지 파일 삭제
-    post.images.forEach(image => {
-      const filePath = path.join(__dirname, image.path);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-    });
+    if (post.images && Array.isArray(post.images)) {
+      post.images.forEach(image => {
+        if (image.filename) {
+          const filePath = path.join(imagesDir, image.filename); // photos.json에 저장된 filename 사용
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log(`파일 삭제 성공: ${filePath}`);
+          } else {
+            console.warn(`삭제할 파일을 찾을 수 없음: ${filePath}`);
+          }
+        }
+      });
+    }
 
-    // 데이터베이스에서 제거
+    // 데이터베이스(JSON 파일)에서 게시글 제거
     photos.splice(postIndex, 1);
     savePhotosData(photos);
 
@@ -239,18 +256,15 @@ app.put('/api/photos/:id', (req, res) => {
   }
 });
 
-// 5. 업로드된 이미지 서빙
-app.use('/uploads', express.static(uploadDir));
-
 // 6. 서버 상태 확인
 app.get('/api/status', (req, res) => {
   const photos = readPhotosData();
-  const stats = fs.statSync(uploadDir);
+  const stats = fs.statSync(dataDir);
   
   res.json({
     status: 'running',
     totalPhotos: photos.length,
-    uploadDir: uploadDir,
+    uploadDir: dataDir,
     diskUsage: {
       total: stats.size,
       photos: photos.length
@@ -268,7 +282,7 @@ console.log('------------------------------------------');
 // 데이터 백업 엔드포인트 (관리자용)
 app.get('/api/backup', (req, res) => {
   try {
-    const backupFile = path.join(uploadDir, `photos-backup-${Date.now()}.json`);
+    const backupFile = path.join(dataDir, `photos-backup-${Date.now()}.json`);
     fs.copyFileSync(dataFile, backupFile);
     res.json({ message: '백업이 성공적으로 생성되었습니다.', backupFile });
   } catch (error) {
@@ -308,7 +322,7 @@ app.use((error, req, res, next) => {
 // 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 여행일지 서버가 포트 ${PORT}에서 실행 중입니다!`);
-  console.log(`📁 업로드 디렉토리: ${uploadDir}`);
+  console.log(`📁 업로드 디렉토리: ${dataDir}`);
   console.log(`🌐 서버 주소: http://localhost:${PORT}`);
   console.log(`📊 API 상태: http://localhost:${PORT}/api/status`);
 }); 
