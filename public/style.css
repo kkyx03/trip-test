@@ -729,12 +729,16 @@ body {
     background: rgba(0, 0, 0, 0.8);
     z-index: 1000;
     backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
 }
 
 .modal.active {
     display: flex;
-    align-items: center;
-    justify-content: center;
+}
+
+.modal[style*="display: block"] {
+    display: flex !important;
 }
 
 .modal-content {

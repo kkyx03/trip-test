@@ -256,6 +256,33 @@ app.put('/api/photos/:id', (req, res) => {
   }
 });
 
+// 5. 로그인 API
+app.post('/api/login', (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    // 간단한 관리자 인증 (실제 프로덕션에서는 더 안전한 방법 사용)
+    const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'engurdl12thd@';
+    
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      res.json({ 
+        success: true, 
+        message: '로그인 성공',
+        user: { username: ADMIN_USERNAME }
+      });
+    } else {
+      res.status(401).json({ 
+        success: false, 
+        message: '아이디 또는 비밀번호가 올바르지 않습니다.' 
+      });
+    }
+  } catch (error) {
+    console.error('로그인 오류:', error);
+    res.status(500).json({ error: '로그인 처리 중 오류가 발생했습니다.' });
+  }
+});
+
 // 6. 서버 상태 확인
 app.get('/api/status', (req, res) => {
   const photos = readPhotosData();
