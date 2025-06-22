@@ -54,6 +54,11 @@ function setupEventListeners() {
     DOMElements.uploadForm.addEventListener('submit', handleUploadSubmit);
     DOMElements.photoInput.addEventListener('change', handlePhotoPreview);
 
+    // 헤더 버튼 이벤트 리스너
+    DOMElements.loginBtn.addEventListener('click', openLoginModal);
+    DOMElements.uploadBtn.addEventListener('click', openUploadModal);
+    DOMElements.logoutBtn.addEventListener('click', logout);
+
     document.addEventListener('click', (e) => {
         if (e.target.closest('.close-btn') || e.target.closest('.cancel-btn')) {
             closeAllModals();
@@ -184,7 +189,7 @@ function renderCategoryMenu() {
         element.innerHTML = html;
     };
     
-    DOMElements.regionCategories.innerHTML = `<li><a href="#" onclick="filterByCategory('all', this)" class="active">�� 모든 추억 (${allPhotos.length})</a></li>`;
+    DOMElements.regionCategories.innerHTML = `<li><a href="#" onclick="filterByCategory('all', this)" class="active">모든 추억 (${allPhotos.length})</a></li>`;
     renderList(DOMElements.regionCategories, regions, '지역');
     renderList(DOMElements.placeCategories, places, '장소');
     renderList(DOMElements.yearCategories, years, '연도');
@@ -277,6 +282,31 @@ function toggleDetailOptions(e) {
 function openUploadModal() {
     DOMElements.uploadModal.style.display = 'block';
     resetUploadForm();
+}
+
+function openLoginModal() {
+    console.log('openLoginModal called');
+    console.log('DOMElements.loginModal:', DOMElements.loginModal);
+    if (DOMElements.loginModal) {
+        DOMElements.loginModal.style.display = 'block';
+        console.log('Login modal should be visible now');
+    } else {
+        console.error('loginModal element not found');
+    }
+}
+
+function closeDetailModal() {
+    DOMElements.detailModal.style.display = 'none';
+    closeMap();
+}
+
+function closeUploadModal() {
+    DOMElements.uploadModal.style.display = 'none';
+    resetUploadForm();
+}
+
+function closeLoginModal() {
+    DOMElements.loginModal.style.display = 'none';
 }
 
 function closeAllModals() {
